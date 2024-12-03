@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-reverse-proxy
+  namespace: test-a
+  labels:
+    app: nginx-reverse-proxy
+spec:
+  selector:
+    matchLabels:
+      app: nginx-reverse-proxy
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: nginx-reverse-proxy
+    spec:
+      serviceAccountName: sa-nginx-reverse-proxy
+      containers:
+        - name: nginx-reverse-proxy
+          image: 992382474575.dkr.ecr.us-east-2.amazonaws.com/nginx-reverse-proxy
+          #imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 9000
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: Custom-Header
+                  value: Awesome
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: Custom-Header
+                  value: Awesome
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 10
+          envFrom:
+            - configMapRef:
+                name: cm-nginx-reverse-proxy
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "256m"
+            limits:
+              memory: "128Mi"
+              cpu: "256m"
+          lifecycle:
+            preStop:
+              exec:
+                command: [ "/bin/sh","-c","sleep 2" ]
+          securityContext:
+            allowPrivilegeEscalation: false
+      terminationGracePeriodSeconds: 315
+      tolerations: []
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                topologyKey: topology.kubernetes.io/zone
+                labelSelector:
+                  matchLabels:
+                    app: nginx-reverse-proxy
+              weight: 100

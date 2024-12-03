@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-nginx-reverse-proxy
+  namespace: test-a
+  labels:
+    app: cm-nginx-reverse-proxy
+data:
+  ENV: "DEV"
+  AWS_REGION: "us-east-2"
+  LISTEN_PORT: "9000"
+  HOST: "vpce.global.dev.caradhras.io"
+  PORT: "443"
+  NGINX_ENVSUBST_OUTPUT_DIR: "/etc/nginx"
